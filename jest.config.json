@@ -1,0 +1,28 @@
+{
+  "moduleFileExtensions": ["ts", "js"],
+  "rootDir": ".",
+  "preset": "ts-jest",
+  "testEnvironment": "node",
+  "setupFiles": ["<rootDir>/jest.setup.ts"],
+  "moduleNameMapper": {
+    "^jsonwebtoken$": "<rootDir>/jest-mocks/jsonwebtoken.js",
+    "^src/(.*)$": "<rootDir>/src/$1"
+  },
+  "testMatch": [
+    "<rootDir>/src/**/*.spec.ts",
+    "<rootDir>/test/**/*.e2e-spec.ts"
+  ],
+  "transform": {
+    "^.+\\.ts$": "ts-jest"
+  },
+  "collectCoverageFrom": [
+    "src/**/*.ts",
+    "!src/**/*.spec.ts",
+    "!src/**/*.interface.ts",
+    "!src/**/dto/**",
+    "!src/**/*.module.ts",
+    "!src/main.ts"
+  ],
+  "coverageDirectory": "coverage",
+  "coverageReporters": ["text", "lcov", "html"]
+}

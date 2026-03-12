@@ -1,0 +1,50 @@
+services:
+  app:
+    container_name: test_npm-app
+    build:
+      context: .
+      target: builder
+
+    ports:
+      - "${PORT}:${PORT}"
+      
+    environment:
+      - PORT=${PORT}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}?schema=public
+    depends_on:
+      - db
+    restart: always
+    networks:
+      - test_npm-network
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+      - ./logs:/usr/src/app/logs
+    command: npm run start:dev
+
+  db:
+    container_name: postgres-db
+    build: ./postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - test_npm-network
+
+volumes:
+  pgdata:
+
+networks:
+  test_npm-network:
+    driver: bridge
