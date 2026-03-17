@@ -11,13 +11,30 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  login     String   @unique
-  password  String
-  roles     String[] @default(["user"])
-  version   Int      @default(1)
-  createdAt DateTime @default(now()) @map("createdAt")
-  updatedAt DateTime @updatedAt @map("updatedAt")
+  id          String       @id @default(uuid())
+  email       String       @unique
+  password    String?
+  roles       String[]     @default(["user"])
+  version     Int          @default(1)
+  createdAt   DateTime     @default(now()) @map("createdAt")
+  updatedAt   DateTime     @updatedAt @map("updatedAt")
+  authMethods AuthMethod[]
 
   @@map("User")
+}
+
+model AuthMethod {
+  id             String   @id @default(uuid())
+  provider       String
+  providerUserId String
+  secret         String?
+  metadata       Json?
+  userId         String
+  createdAt      DateTime @default(now()) @map("createdAt")
+  updatedAt      DateTime @updatedAt @map("updatedAt")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@map("AuthMethod")
 }

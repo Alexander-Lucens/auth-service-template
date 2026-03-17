@@ -1,0 +1,25 @@
+services:
+  app:
+    build:
+      context: .
+      target: runner
+    environment:
+      - NODE_ENV=production
+      - PORT=${PORT}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}?schema=public
+    command: node dist/main.js
+    volumes: []
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:${PORT}/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    depends_on:
+      db:
+        condition: service_healthy

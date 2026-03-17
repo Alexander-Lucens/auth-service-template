@@ -38,7 +38,7 @@ describe('UserController', () => {
 
   describe('getAllUsers', () => {
     it('should return all users', async () => {
-      const users = [{ id: '1', login: 'user1' }];
+      const users = [{ id: '1', email: 'user1@example.com' }];
       service.getAll.mockResolvedValue(users as any);
 
       const result = await controller.getAllUsers();
@@ -51,7 +51,7 @@ describe('UserController', () => {
   describe('getUserById', () => {
     it('should return user by id', async () => {
       const userId = '123e4567-e89b-12d3-a456-426614174000';
-      const user = { id: userId, login: 'testuser' };
+      const user = { id: userId, email: 'testuser@example.com' };
       service.getById.mockResolvedValue(user as any);
 
       const result = await controller.getUserById(userId);
@@ -64,10 +64,10 @@ describe('UserController', () => {
   describe('createUser', () => {
     it('should create a new user', async () => {
       const createDto: CreateUserDto = {
-        login: 'newuser',
+        email: 'newuser@example.com',
         password: 'password123',
       };
-      const createdUser = { id: '1', login: createDto.login };
+      const createdUser = { id: '1', email: createDto.email };
       service.create.mockResolvedValue(createdUser as any);
 
       const result = await controller.createUser(createDto);

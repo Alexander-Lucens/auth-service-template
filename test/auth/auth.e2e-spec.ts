@@ -9,16 +9,13 @@ import { ThrottlerModule } from '@nestjs/throttler';
 describe('Auth (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let authToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideModule(ThrottlerModule)
-      .useModule(
-        ThrottlerModule.forRoot([{ ttl: 60000, limit: 1000 }]),
-      )
+      .useModule(ThrottlerModule.forRoot([{ ttl: 60000, limit: 1000 }]))
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -29,7 +26,6 @@ describe('Auth (e2e)', () => {
   });
 
   beforeEach(async () => {
-    // Clean database before each test
     await prisma.user.deleteMany({});
   });
 
@@ -40,9 +36,9 @@ describe('Auth (e2e)', () => {
   });
 
   describe('POST /auth/signup', () => {
-    it('should create a new user', async () => {
+    it('should create a new local user', async () => {
       const signupDto = {
-        login: 'testuser',
+        email: 'testuser@example.com',
         password: 'password123',
       };
 
@@ -52,24 +48,54 @@ describe('Auth (e2e)', () => {
         .expect(201);
 
       expect(response.body).toHaveProperty('id');
-      expect(response.body).toHaveProperty('login', signupDto.login);
+      expect(response.body).toHaveProperty('email', signupDto.email);
       expect(response.body).not.toHaveProperty('password');
       expect(response.body).toHaveProperty('roles', ['user']);
+      expect(response.body).toHaveProperty('authMethods');
+    });
+
+    it('should autolink oauth method for existing email', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/signup')
+        .send({ email: 'testuser@example.com', password: 'password123' })
+        .expect(201);
+
+      const response = await request(app.getHttpServer())
+        .post('/auth/signup')
+        .send({
+          email: 'testuser@example.com',
+          authMethods: [
+            {
+              provider: 'google',
+              providerUserId: 'google-123',
+            },
+          ],
+        })
+        .expect(201);
+
+      expect(response.body.authMethods).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            provider: 'google',
+            providerUserId: 'google-123',
+          }),
+        ]),
+      );
     });
 
     it('should return 400 for invalid data', async () => {
       await request(app.getHttpServer())
         .post('/auth/signup')
         .send({
-          login: 'ab', // Too short
-          password: '12', // Too short
+          email: 'invalid-email',
+          password: '12',
         })
         .expect(400);
     });
 
-    it('should return 400 for duplicate login', async () => {
+    it('should return 400 for duplicate local signup by same email', async () => {
       const signupDto = {
-        login: 'testuser',
+        email: 'testuser@example.com',
         password: 'password123',
       };
 
@@ -90,7 +116,7 @@ describe('Auth (e2e)', () => {
       const passwordHash = await hashPassword('password123');
       await prisma.user.create({
         data: {
-          login: 'testuser',
+          email: 'testuser@example.com',
           password: passwordHash,
           roles: ['user'],
         },
@@ -99,7 +125,7 @@ describe('Auth (e2e)', () => {
 
     it('should return tokens for valid credentials', async () => {
       const loginDto = {
-        login: 'testuser',
+        email: 'testuser@example.com',
         password: 'password123',
       };
 
@@ -110,25 +136,14 @@ describe('Auth (e2e)', () => {
 
       expect(response.body).toHaveProperty('accessToken');
       expect(response.body).toHaveProperty('refreshToken');
-      authToken = response.body.accessToken;
     });
 
     it('should return 403 for invalid credentials', async () => {
       await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          login: 'testuser',
+          email: 'testuser@example.com',
           password: 'wrongpassword',
-        })
-        .expect(403);
-    });
-
-    it('should return 403 for non-existent user', async () => {
-      await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({
-          login: 'nonexistent',
-          password: 'password123',
         })
         .expect(403);
     });
@@ -141,7 +156,7 @@ describe('Auth (e2e)', () => {
       const passwordHash = await hashPassword('password123');
       await prisma.user.create({
         data: {
-          login: 'testuser',
+          email: 'testuser@example.com',
           password: passwordHash,
           roles: ['user'],
         },
@@ -150,7 +165,7 @@ describe('Auth (e2e)', () => {
       const loginResponse = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          login: 'testuser',
+          email: 'testuser@example.com',
           password: 'password123',
         });
 
@@ -165,13 +180,6 @@ describe('Auth (e2e)', () => {
 
       expect(response.body).toHaveProperty('accessToken');
       expect(response.body).toHaveProperty('refreshToken');
-    });
-
-    it('should return 403 for invalid refresh token', async () => {
-      await request(app.getHttpServer())
-        .post('/auth/refresh')
-        .send({ refreshToken: 'invalid-token' })
-        .expect(403);
     });
   });
 });

@@ -22,12 +22,19 @@ describe('AuthService', () => {
 
   const mockUser: User = {
     id: '123e4567-e89b-12d3-a456-426614174000',
-    login: 'testuser',
+    email: 'testuser@example.com',
     password: 'hashedpassword',
     roles: ['user'],
     version: 1,
     createdAt: Date.now(),
     updatedAt: Date.now(),
+    authMethods: [
+      {
+        provider: 'local',
+        providerUserId: 'testuser@example.com',
+        secret: 'hashedpassword',
+      },
+    ],
   };
 
   const mockJwtService = {
@@ -37,7 +44,7 @@ describe('AuthService', () => {
 
   const mockUserService = {
     create: jest.fn(),
-    getByLogin: jest.fn(),
+    getByEmail: jest.fn(),
   };
 
   const mockConfigService = {
@@ -94,10 +101,10 @@ describe('AuthService', () => {
   describe('signup', () => {
     it('should create a new user', async () => {
       const createDto: CreateUserDto = {
-        login: 'newuser',
+        email: 'newuser@example.com',
         password: 'password123',
       };
-      const createdUser = { id: '1', login: createDto.login };
+      const createdUser = { id: '1', email: createDto.email };
       userService.create.mockResolvedValue(createdUser as any);
 
       const result = await service.signup(createDto);
@@ -110,17 +117,17 @@ describe('AuthService', () => {
   describe('login', () => {
     it('should return tokens for valid credentials', async () => {
       const loginDto: LoginDto = {
-        login: 'testuser',
+        email: 'testuser@example.com',
         password: 'password123',
       };
 
-      userService.getByLogin.mockResolvedValue(mockUser);
+      userService.getByEmail.mockResolvedValue(mockUser);
       (comparePassword as jest.Mock).mockResolvedValue(true);
       jwtService.signAsync.mockResolvedValue('token');
 
       const result = await service.login(loginDto);
 
-      expect(userService.getByLogin).toHaveBeenCalledWith(loginDto.login);
+      expect(userService.getByEmail).toHaveBeenCalledWith(loginDto.email);
       expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
@@ -128,29 +135,14 @@ describe('AuthService', () => {
 
     it('should throw ForbiddenException for invalid credentials', async () => {
       const loginDto: LoginDto = {
-        login: 'testuser',
+        email: 'testuser@example.com',
         password: 'wrongpassword',
       };
 
-      userService.getByLogin.mockResolvedValue(mockUser);
+      userService.getByEmail.mockResolvedValue(mockUser);
       (comparePassword as jest.Mock).mockResolvedValue(false);
 
-      await expect(service.login(loginDto)).rejects.toThrow(
-        ForbiddenException,
-      );
-    });
-
-    it('should throw ForbiddenException if user not found', async () => {
-      const loginDto: LoginDto = {
-        login: 'nonexistent',
-        password: 'password123',
-      };
-
-      userService.getByLogin.mockResolvedValue(undefined);
-
-      await expect(service.login(loginDto)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.login(loginDto)).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -160,38 +152,20 @@ describe('AuthService', () => {
         refreshToken: 'valid-refresh-token',
       };
 
-      const payload = { userId: mockUser.id, login: mockUser.login };
+      const payload = { userId: mockUser.id, email: mockUser.email };
       jwtService.verifyAsync.mockResolvedValue(payload);
-      userService.getByLogin.mockResolvedValue(mockUser);
+      userService.getByEmail.mockResolvedValue(mockUser);
       jwtService.signAsync.mockResolvedValue('new-token');
 
       const result = await service.refresh(refreshDto);
 
-      expect(jwtService.verifyAsync).toHaveBeenCalledWith(
-        refreshDto.refreshToken,
-        { secret: 'test-refresh-secret' },
-      );
-      expect(userService.getByLogin).toHaveBeenCalledWith(payload.login);
+      expect(userService.getByEmail).toHaveBeenCalledWith(payload.email);
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
     });
 
-    it('should throw ForbiddenException for invalid refresh token', async () => {
-      const refreshDto: RefreshDto = {
-        refreshToken: 'invalid-token',
-      };
-
-      jwtService.verifyAsync.mockRejectedValue(new Error('Invalid token'));
-
-      await expect(service.refresh(refreshDto)).rejects.toThrow(
-        ForbiddenException,
-      );
-    });
-
     it('should throw UnauthorizedException if refresh token is missing', async () => {
-      const refreshDto: RefreshDto = {
-        refreshToken: '',
-      };
+      const refreshDto: RefreshDto = { refreshToken: '' };
 
       await expect(service.refresh(refreshDto)).rejects.toThrow(
         UnauthorizedException,

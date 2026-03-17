@@ -47,8 +47,51 @@ npm run start:dev
 ### Docker (Full Stack)
 
 ```bash
-npm run docker:build
+npm run docker
 ```
+
+Shortcut alias:
+
+```bash
+npm run docker
+```
+
+This command now starts both `db` and `app` **without Docker image build** in development mode, then runs Prisma generate + migrate inside the app container.
+
+### Docker Modes
+
+Development mode (hot reload + bind mounts):
+
+```bash
+npm run docker:up
+```
+
+If images are already built and you only need to start containers:
+
+```bash
+npm run docker:up:no-build
+```
+
+If you explicitly want to build the production-like app image:
+
+```bash
+npm run docker:up:build
+```
+
+Production-like mode (runner image, no source mounts):
+
+```bash
+npm run docker:prod:up
+npm run docker:prod:migrate
+```
+
+One-shot production-like deploy:
+
+```bash
+npm run docker:prod:deploy
+```
+
+Both app and db containers expose Docker healthchecks (`/health` for app and `pg_isready` for db).
 
 ## API Endpoints
 
@@ -84,14 +127,66 @@ npm run docker:build
 |---------|-------------|
 | `npm run start:dev` | Start in development mode with hot-reload |
 | `npm run start:prod` | Start in production mode |
+| `npm run typecheck` | Run TypeScript checks without build output |
 | `npm run build` | Build the application |
 | `npm test` | Run unit tests |
 | `npm run test:e2e` | Run E2E tests |
+| `npm run test:all` | Run unit and E2E tests sequentially |
 | `npm run test:cov` | Run tests with coverage |
+| `npm run test:cov:unit` | Coverage for unit tests only (stable, fast) |
+| `npm run test:cov:e2e` | Coverage for e2e tests only (serialized) |
+| `npm run test:cov:all` | Coverage for all tests in-band (no DB race) |
 | `npm run lint` | Run ESLint with auto-fix |
 | `npm run format` | Format code with Prettier |
-| `npm run docker:build` | Build and start with Docker Compose |
+| `npm run prisma:generate` | Regenerate Prisma Client after schema changes |
+| `npm run prisma:migrate:deploy` | Apply production-safe Prisma migrations |
+| `npm run prisma:migrate:dev` | Create/apply migration in development |
+| `npm run prisma:migrate:reset` | Reset database and re-apply migrations |
+| `npm run docker:build` | Compatibility shortcut: build+up and apply migrations |
+| `npm run docker` | Alias for `docker:build` |
+| `npm run docker:up` | Start dev stack with Docker Compose |
+| `npm run docker:up:build` | Start production-like stack with image build |
+| `npm run docker:up:no-build` | Start dev stack without rebuilding images |
+| `npm run docker:image:build` | Build only production-like app image |
+| `npm run docker:rebuild` | Force rebuild and recreate containers |
+| `npm run docker:migrate` | Run Prisma migrate deploy in container/local fallback |
+| `npm run docker:logs` | Follow app and db logs |
+| `npm run docker:shell` | Open shell in app container |
+| `npm run docker:prod:up` | Start production-like stack (runner stage) |
+| `npm run docker:prod:up:no-build` | Start production-like stack without rebuild |
+| `npm run docker:prod:migrate` | Run migration in production-like stack |
+| `npm run docker:prod:deploy` | Production-like up + migration |
 | `npm run docker:down` | Stop Docker Compose |
+| `npm run docker:down:volumes` | Stop Docker Compose and delete volumes |
+| `npm run docker:clean:project` | Remove project containers/networks/volumes |
+| `npm run docker:clean:builder` | Remove dangling Docker build cache |
+| `npm run docker:clean:unused` | Remove unused Docker objects (images/networks/cache) |
+| `npm run docker:recover` | Clean project docker state and start dev stack (no build) |
+
+If Docker reports `ENOSPC` or `No space left on device`, run this first:
+
+```bash
+npm run docker:recover
+```
+
+If the error still persists, free global Docker space:
+
+```bash
+npm run docker:clean:builder
+npm run docker:clean:unused
+npm run docker:recover
+```
+
+## Makefile Shortcuts
+
+If you prefer `make` commands:
+
+```bash
+make help
+make docker-build
+make docker-prod-deploy
+make test-all
+```
 
 ## API Documentation
 

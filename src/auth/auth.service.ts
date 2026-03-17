@@ -24,16 +24,16 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.userService.getByLogin(dto.login);
-    if (!user || !(await comparePassword(dto.password, user.password))) {
-      throw new ForbiddenException('Incorrect login or password');
+    const user = await this.userService.getByEmail(dto.email);
+    if (!user || !user.password || !(await comparePassword(dto.password, user.password))) {
+      throw new ForbiddenException('Incorrect email or password');
     }
     const roles = user.roles || ['user'];
-    return this.generateTokens(user.id, user.login, roles);
+    return this.generateTokens(user.id, dto.email, roles);
   }
 
-  private async generateTokens(userId: string, login: string, roles: string[] = ['user']) {
-    const payload = { userId, login, roles };
+  private async generateTokens(userId: string, email: string, roles: string[] = ['user']) {
+    const payload = { userId, email, roles };
 
     const accessToken = await this.jwtService.signAsync(payload, {
       secret: this.configService.getOrThrow<string>('JWT_SECRET_KEY'),
@@ -55,13 +55,13 @@ export class AuthService {
       const payload = await this.jwtService.verifyAsync(dto.refreshToken, {
         secret: this.configService.getOrThrow<string>('JWT_SECRET_REFRESH_KEY'),
       });
-      const user = await this.userService.getByLogin(payload.login);
+      const user = await this.userService.getByEmail(payload.email);
       if (!user) {
         throw new ForbiddenException('User not found');
       }
 
       const roles = user.roles || ['user'];
-      return this.generateTokens(user.id, user.login, roles);
+      return this.generateTokens(user.id, user.email, roles);
     } catch (e) {
       throw new ForbiddenException('Invalid refresh token');
     }

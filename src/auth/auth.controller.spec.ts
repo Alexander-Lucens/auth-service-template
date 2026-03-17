@@ -39,10 +39,10 @@ describe('AuthController', () => {
   describe('signup', () => {
     it('should create a new user', async () => {
       const createDto: CreateUserDto = {
-        login: 'newuser',
+        email: 'newuser@example.com',
         password: 'password123',
       };
-      const createdUser = { id: '1', login: createDto.login };
+      const createdUser = { id: '1', email: createDto.email };
       service.signup.mockResolvedValue(createdUser as any);
 
       const result = await controller.signup(createDto);
@@ -55,7 +55,7 @@ describe('AuthController', () => {
   describe('login', () => {
     it('should return tokens', async () => {
       const loginDto: LoginDto = {
-        login: 'testuser',
+        email: 'testuser@example.com',
         password: 'password123',
       };
       const tokens = {
