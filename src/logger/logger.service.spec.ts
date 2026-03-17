@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { LoggerService } from './logger.service';
 
 describe('LoggerService', () => {
@@ -6,7 +7,15 @@ describe('LoggerService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [LoggerService],
+      providers: [
+        LoggerService,
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue(2),
+          },
+        },
+      ],
     }).compile();
 
     service = module.get<LoggerService>(LoggerService);
@@ -16,3 +25,4 @@ describe('LoggerService', () => {
     expect(service).toBeDefined();
   });
 });
+

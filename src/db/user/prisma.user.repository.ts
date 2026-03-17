@@ -23,7 +23,7 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   async getByLogin(login: string): Promise<DomainUser | undefined> {
-    const user = await this.prisma.user.findFirst({ where: { login } });
+    const user = await this.prisma.user.findUnique({ where: { login } });
     return user ? this.mapToDomain(user) : undefined;
   }
 

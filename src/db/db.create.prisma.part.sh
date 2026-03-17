@@ -23,7 +23,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { I${CAPITALIZED}Repository } from './${LOWER}.repository.interface';
 import { ${CAPITALIZED} } from '@prisma/client';
-import { Create${CAPITALIZED}Dto, Update${CAPITALIZED}Dto } from 'src/interfaces/${LOWER}.interface';
+import { Create${CAPITALIZED}Dto, Update${CAPITALIZED}Dto } from 'src/${LOWER}/dto/${LOWER}.dto';
 
 @Injectable()
 export class Prisma${CAPITALIZED}Repository implements I${CAPITALIZED}Repository {
@@ -45,7 +45,7 @@ export class Prisma${CAPITALIZED}Repository implements I${CAPITALIZED}Repository
 
   async update(id: string, dto: Update${CAPITALIZED}Dto): Promise<${CAPITALIZED} | undefined> {
     try {
-      return await this.prisma.${LOWER}.update({ where: { id }, data });
+      return await this.prisma.${LOWER}.update({ where: { id }, data: dto });
     } catch (e) {
       return undefined;
     }

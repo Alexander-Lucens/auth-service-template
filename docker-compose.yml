@@ -1,13 +1,13 @@
 services:
   app:
-    container_name: test_npm-app
+    container_name: auth-service-app
     build:
       context: .
       target: builder
 
     ports:
       - "${PORT}:${PORT}"
-      
+
     environment:
       - PORT=${PORT}
       - POSTGRES_HOST=db
@@ -20,7 +20,7 @@ services:
       - db
     restart: always
     networks:
-      - test_npm-network
+      - auth-service-network
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
@@ -40,11 +40,11 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
-      - test_npm-network
+      - auth-service-network
 
 volumes:
   pgdata:
 
 networks:
-  test_npm-network:
+  auth-service-network:
     driver: bridge

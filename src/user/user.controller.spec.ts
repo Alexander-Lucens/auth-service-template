@@ -81,13 +81,17 @@ describe('UserController', () => {
     it('should update user password', async () => {
       const userId = '123e4567-e89b-12d3-a456-426614174000';
       const updateDto: UpdatePasswordDto = {
-        oldPassword: 'oldpass',
-        newPassword: 'newpass',
+        oldPassword: 'oldpass123',
+        newPassword: 'newpass1234',
       };
       const updatedUser = { id: userId, version: 2 };
       service.update.mockResolvedValue(updatedUser as any);
 
-      const result = await controller.updatePassword(userId, updateDto);
+      const mockReq = {
+        user: { userId, roles: ['admin'] },
+      } as any;
+
+      const result = await controller.updatePassword(userId, updateDto, mockReq);
 
       expect(service.update).toHaveBeenCalledWith(userId, updateDto);
       expect(result).toEqual(updatedUser);

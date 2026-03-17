@@ -1,4 +1,5 @@
 import { Injectable, ConsoleLogger, LogLevel } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class LoggerService extends ConsoleLogger {
@@ -11,9 +12,9 @@ export class LoggerService extends ConsoleLogger {
   ];
   private currentLogLevel: number;
 
-  constructor() {
+  constructor(private configService: ConfigService) {
     super();
-    this.currentLogLevel = parseInt(process.env.LOG_LEVEL) || 2;
+    this.currentLogLevel = this.configService.get<number>('LOG_LEVEL', 2);
     this.setLogLevels(this.logLevels.slice(0, this.currentLogLevel + 1));
   }
 
@@ -54,9 +55,6 @@ export class LoggerService extends ConsoleLogger {
       params: optionalParams,
     };
 
-    // Loki / promtail-friendly: одна JSON-строка в stdout
-    // (stdout/stderr собираются как логи контейнера)
-    // error -> stderr, остальные -> stdout
     const serialized = JSON.stringify(payload);
     if (level === 'error') {
       // eslint-disable-next-line no-console
@@ -67,3 +65,4 @@ export class LoggerService extends ConsoleLogger {
     }
   }
 }
+

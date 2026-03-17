@@ -1,26 +1,15 @@
 import * as bcrypt from 'bcrypt';
 
-const saltRound = Number(process.env.CRYPT_SALT) || 5;
+const SALT_ROUNDS = Number(process.env.CRYPT_SALT) || 10;
 
 export async function hashPassword(pass: string): Promise<string> {
-  try {
-    const hashed = await bcrypt.hash(pass, saltRound);
-    return hashed;
-  } catch (error) {
-    console.error('hashPassword error', error);
-    throw error;
-  }
+  return bcrypt.hash(pass, SALT_ROUNDS);
 }
 
 export async function comparePassword(
   plainPassword: string,
   hashedPassword: string,
-) {
-  try {
-    const isMatch = await bcrypt.compare(plainPassword, hashedPassword);
-    return isMatch;
-  } catch (error) {
-    console.error('Comparison error:', error);
-    throw error;
-  }
+): Promise<boolean> {
+  return bcrypt.compare(plainPassword, hashedPassword);
 }
+

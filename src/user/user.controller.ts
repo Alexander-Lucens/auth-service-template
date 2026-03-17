@@ -19,7 +19,6 @@ import {
 } from './dto/user.dto';
 
 import { UserService } from './user.service';
-import { Public } from 'src/auth/decorators/public.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 
 @Controller('user')
@@ -39,7 +38,7 @@ export class UserController {
   }
 
   @Post()
-  @Public()
+  @Roles('admin')
   createUser(@Body() body: CreateUserDto) {
     return this.userService.create(body);
   }
@@ -51,13 +50,10 @@ export class UserController {
     @Body() body: UpdatePasswordDto,
     @Req() req: Request & { user?: { userId: string; roles?: string[] } },
   ) {
-    const roles = req.user?.roles ?? [];
     const currentUserId = req.user?.userId;
-
-    const isAdmin = roles.includes('admin');
     const isSelf = currentUserId === id;
 
-    if (!isAdmin && !isSelf) {
+    if (!isSelf) {
       throw new ForbiddenException('You can only update your own password');
     }
 

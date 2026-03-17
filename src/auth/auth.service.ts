@@ -3,6 +3,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { comparePassword } from 'src/crypto/hashPassword';
 import { CreateUserDto } from 'src/user/dto/user.dto';
@@ -15,6 +16,7 @@ export class AuthService {
   constructor(
     private userService: UserService,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
 
   async signup(dto: CreateUserDto) {
@@ -34,13 +36,13 @@ export class AuthService {
     const payload = { userId, login, roles };
 
     const accessToken = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_SECRET_KEY!,
-      expiresIn: (process.env.TOKEN_EXPIRE_TIME || '1h') as any,
+      secret: this.configService.getOrThrow<string>('JWT_SECRET_KEY'),
+      expiresIn: this.configService.get<string>('TOKEN_EXPIRE_TIME', '1h') as any,
     });
 
     const refreshToken = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_SECRET_REFRESH_KEY!,
-      expiresIn: (process.env.TOKEN_REFRESH_EXPIRE_TIME || '24h') as any,
+      secret: this.configService.getOrThrow<string>('JWT_SECRET_REFRESH_KEY'),
+      expiresIn: this.configService.get<string>('TOKEN_REFRESH_EXPIRE_TIME', '24h') as any,
     });
     return { accessToken, refreshToken };
   }
@@ -51,7 +53,7 @@ export class AuthService {
     }
     try {
       const payload = await this.jwtService.verifyAsync(dto.refreshToken, {
-        secret: process.env.JWT_SECRET_REFRESH_KEY,
+        secret: this.configService.getOrThrow<string>('JWT_SECRET_REFRESH_KEY'),
       });
       const user = await this.userService.getByLogin(payload.login);
       if (!user) {
@@ -65,3 +67,4 @@ export class AuthService {
     }
   }
 }
+

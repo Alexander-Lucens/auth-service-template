@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { UserService } from 'src/user/user.service';
 import { CreateUserDto, User } from 'src/user/dto/user.dto';
@@ -39,6 +40,27 @@ describe('AuthService', () => {
     getByLogin: jest.fn(),
   };
 
+  const mockConfigService = {
+    get: jest.fn((key: string, defaultValue?: any) => {
+      const config: Record<string, string> = {
+        JWT_SECRET_KEY: 'test-secret',
+        JWT_SECRET_REFRESH_KEY: 'test-refresh-secret',
+        TOKEN_EXPIRE_TIME: '1h',
+        TOKEN_REFRESH_EXPIRE_TIME: '24h',
+      };
+      return config[key] ?? defaultValue;
+    }),
+    getOrThrow: jest.fn((key: string) => {
+      const config: Record<string, string> = {
+        JWT_SECRET_KEY: 'test-secret',
+        JWT_SECRET_REFRESH_KEY: 'test-refresh-secret',
+      };
+      const value = config[key];
+      if (!value) throw new Error(`Config key ${key} not found`);
+      return value;
+    }),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -51,18 +73,16 @@ describe('AuthService', () => {
           provide: JwtService,
           useValue: mockJwtService,
         },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
+        },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     userService = module.get(UserService);
     jwtService = module.get(JwtService);
-
-    // Setup environment variables
-    process.env.JWT_SECRET_KEY = 'test-secret';
-    process.env.JWT_SECRET_REFRESH_KEY = 'test-refresh-secret';
-    process.env.TOKEN_EXPIRE_TIME = '1h';
-    process.env.TOKEN_REFRESH_EXPIRE_TIME = '24h';
 
     jest.clearAllMocks();
   });
@@ -149,7 +169,7 @@ describe('AuthService', () => {
 
       expect(jwtService.verifyAsync).toHaveBeenCalledWith(
         refreshDto.refreshToken,
-        { secret: process.env.JWT_SECRET_REFRESH_KEY },
+        { secret: 'test-refresh-secret' },
       );
       expect(userService.getByLogin).toHaveBeenCalledWith(payload.login);
       expect(result).toHaveProperty('accessToken');

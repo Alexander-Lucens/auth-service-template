@@ -4,6 +4,7 @@ import { AppModule } from '../../src/app.module';
 import * as request from 'supertest';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { hashPassword } from '../../src/crypto/hashPassword';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 describe('Auth (e2e)', () => {
   let app: INestApplication;
@@ -13,7 +14,12 @@ describe('Auth (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideModule(ThrottlerModule)
+      .useModule(
+        ThrottlerModule.forRoot([{ ttl: 60000, limit: 1000 }]),
+      )
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
